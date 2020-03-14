@@ -29,24 +29,60 @@ def train_old_new_algo():
 	print("Model trained!")
 	return (training, boosted_model)
 
-def get_song_info(sp, mysong, myartist):
+def get_song_info(sp, mysong, myartist, guess):
 
-	songdict = sp.search(q='artist:' + myartist + ' track:' + mysong, type='track')["tracks"]["items"][0]
+	songdict = sp.search(q='artist:' + myartist + ' track:' + mysong, type='track')["tracks"]["items"][guess]
 	myid = songdict["id"]
 	rdate = songdict["album"]["release_date"]
 	artist_name = songdict["artists"][0]["name"]
 	song_name = songdict["name"]
 	return {"id":[myid], "artist_name": [artist_name], "song_name": [song_name], "rdate":[rdate]}
 
-def add_to_training_data(training, newdf):
-	training = pd.read_csv("model_data.csv").drop_duplicates()
+def check_song_name_ret_info(sp):
+	song = input("Which song do you want me to guess? ")
+	artist = input("Which artist sings it? ")
+
+	ok = False
+	guess = 0
+	while ok == False:
+		try:
+			songinfo = pd.DataFrame(get_song_info(sp, song, artist, guess))
+		except:
+			print("Song lookup returned no results, try again")
+			return (False, "blah")
+		print("Is the song you want {s} by {a}?".format(s=songinfo["song_name"].iloc[0], a = songinfo["artist_name"].iloc[0]))
+		good = input("Enter y or n ")
+		if good[0] == "y":
+			return (True, songinfo)
+		else:
+			ok= False
+			guess += 1
+			if guess >= 3:
+				print("Can't find this song, please try another")
+				return (False, songinfo)
 
 def song_guesser(sp, modeltup):
 	model = modeltup[1]
-	song = input("Which song do you want me to guess? ")
-	artist = input("Which artist sings it? ")
+
+	
+	# good = False
+	# guess = 0
+	# while good == False:
+	# 	songtup = check_song_name_ret_info(sp, guess)
+	# 	songinfo = songtup[1]
+	# 	good = songtup[0]
+	# 	guess += 1
+	# 	if guess > 2:
+	# 		print("Can't find this song, please try another")
+	# 		guess = 0
+	good = False
+
+	while good == False:
+		songtup = check_song_name_ret_info(sp)
+		songinfo = songtup[1]
+		good = songtup[0]
+
 	print("Retrieving song features . . .")
-	songinfo = pd.DataFrame(get_song_info(sp, song, artist))
 	features = pd.DataFrame(sp.audio_features(songinfo["id"])[0], index=[0])
 
 	song_model_data = songinfo.merge(features, how = 'inner', on = 'id')
