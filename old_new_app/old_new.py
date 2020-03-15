@@ -32,6 +32,20 @@ def train_old_new_algo():
 	print("Model trained!")
 	return (training, boosted_model)
 
+def get_genre(sp, songid):
+	genre_list = sp.artist(sp.track(songid)["artists"][0]["id"])['genres']
+	if len(genre_list) == 0:
+		return "unknown"
+	genre_sentence = " ".join(genre_list)
+	rezlist = []
+	for each in ['hip hop', 'rock', 'soul', 'country', 'pop', 'jazz', 'edm', 'reggae', 'classical']:
+		mytup = (each, len(re.findall(each, genre_sentence)))
+		rezlist.append(mytup)
+	sorter = sorted(rezlist, key=lambda tup: tup[1], reverse = True)
+	if sorter[0][1]==0:
+		return "unknown"
+	return sorter[0][0]
+
 def get_song_info(sp, mysong, myartist, guess):
 
 	songdict = sp.search(q='artist:' + myartist + ' track:' + mysong, type='track')["tracks"]["items"][guess]
@@ -135,7 +149,18 @@ def run_app():
 	while keep_playing == True:
 		keep_playing = song_guesser(sp, modeltup)
 
+def make_genre_table()
+	sp = make_spotify()
+	raw_train = pd.read_csv("model_data.csv").drop_duplicates()
+	genre_list = []
+	for each in raw_train.id:
+		genre_list.append(get_genre(sp, each))
+	raw_train['genre'] = genre_list
+	raw_train.to_csv("model_data_wgenre.csv", index = False)
+
 
 if __name__ == "__main__":
 	run_app()
+
+
 
