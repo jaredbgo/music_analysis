@@ -7,6 +7,12 @@ import numpy as np
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import xgboost as xgb
+import keras
+from keras.models import Sequential
+from keras.layers import Dense, Activation
+from keras import regularizers
+from keras.optimizers import SGD
+from sklearn import preprocessing
 
 def make_spotify():
 	cid = '1db39bea540c44b28de5f4945e31c8fb'
@@ -16,21 +22,44 @@ def make_spotify():
 
 def train_old_new_algo():
 
-	if "model_data.csv" not in os.listdir():
+	if "model_data_wgenre.csv" not in os.listdir():
 		raise Exception("Could not find training data, shutting down, goodbye :(")
-	print("Training model now beep boop . . .")
-	raw_train = pd.read_csv("model_data.csv").drop_duplicates()
+
+	print("Training old/new model now beep boop . . .")
+	raw_train = pd.read_csv("model_data_wgenre.csv").drop_duplicates()
 	old = raw_train[raw_train.is_old == 1]
 	new = raw_train[raw_train.ryear >= 2000]
 	training = pd.concat([old, new])
 	X = training[["danceability", "energy", "loudness", "mode", "acousticness", "valence", "tempo", "duration_ms"]]
 	Y = training["is_old"]
 
-	boosted_model =xgb.XGBClassifier(random_state=1,learning_rate=0.01, max_depth = 10)
+	boosted_model =xgb.XGBClassifier(n_estimators = 500, random_state=1,learning_rate=0.01, max_depth = 10)
 	boosted_model.fit(X, Y)
 	time.sleep(3)
-	print("Model trained!")
+	print("Old/new model trained!")
 	return (training, boosted_model)
+
+def train_genre_algo():
+
+	if "model_data_wgenre.csv" not in os.listdir():
+		raise Exception("Could not find training data, shutting down, goodbye :(")
+		
+	print("Training genre model now beep boop . . .")
+	raw_train = pd.read_csv("model_data_wgenre.csv").drop_duplicates()
+	training = raw_train[raw_train.genre != "unknown"]
+
+	X = training[["danceability", "energy", "loudness", "mode", "acousticness", "valence", "tempo", "duration_ms"]]
+	lab_dict = {}
+	for num, label in enumerate(pd.Series(X.genre.unique()).sort_values()):
+  		lab_dict[label] = num
+  	back_to_label = {y:x for x,y in lab_dict.items()}
+	Y = training["genre"].map{lab_dict}
+
+	boosted_model = xgb.XGBClassifier(n_estimators = 1000, random_state=1,learning_rate=0.01, max_depth = 5, objective='multi:softmax', num_classes=8)
+	boosted_model.fit(X, Y)
+	print("Genre model trained!")
+	return (back_to_label, boosted_model)
+
 
 def get_genre(sp, songid):
 	genre_list = sp.artist(sp.track(songid)["artists"][0]["id"])['genres']
