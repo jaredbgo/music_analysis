@@ -7,11 +7,6 @@ import numpy as np
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import xgboost as xgb
-import keras
-from keras.models import Sequential
-from keras.layers import Dense, Activation
-from keras import regularizers
-from keras.optimizers import SGD
 from sklearn import preprocessing
 
 def make_spotify():
@@ -43,17 +38,17 @@ def train_genre_algo():
 
 	if "model_data_wgenre.csv" not in os.listdir():
 		raise Exception("Could not find training data, shutting down, goodbye :(")
-		
+
 	print("Training genre model now beep boop . . .")
 	raw_train = pd.read_csv("model_data_wgenre.csv").drop_duplicates()
 	training = raw_train[raw_train.genre != "unknown"]
 
 	X = training[["danceability", "energy", "loudness", "mode", "acousticness", "valence", "tempo", "duration_ms"]]
 	lab_dict = {}
-	for num, label in enumerate(pd.Series(X.genre.unique()).sort_values()):
-  		lab_dict[label] = num
-  	back_to_label = {y:x for x,y in lab_dict.items()}
-	Y = training["genre"].map{lab_dict}
+	for num, label in enumerate(pd.Series(training.genre.unique()).sort_values()):
+		lab_dict[label] = num
+	back_to_label = {y:x for x,y in lab_dict.items()}
+	Y = training["genre"].map(lab_dict)
 
 	boosted_model = xgb.XGBClassifier(n_estimators = 1000, random_state=1,learning_rate=0.01, max_depth = 5, objective='multi:softmax', num_classes=8)
 	boosted_model.fit(X, Y)
@@ -107,8 +102,10 @@ def check_song_name_ret_info(sp):
 				print("Can't find this song, please try another")
 				return (False, songinfo)
 
-def song_guesser(sp, modeltup):
-	model = modeltup[1]
+def song_guesser(sp, onmodeltup, gmodeltup):
+	onmodel = onmodeltup[1]
+	gmodel = gmodeltup[1]
+	gmodelconvert = gmodeltup[0]
 
 	
 	# good = False
@@ -134,27 +131,37 @@ def song_guesser(sp, modeltup):
 	song_model_data = songinfo.merge(features, how = 'inner', on = 'id')
 	song_model_data["ryear"] = song_model_data.rdate.str.extract(r"(\d\d\d\d)").astype(int)
 	song_model_data["is_old"] = np.where(song_model_data["ryear"] < 1980, 1, 0)
+	song_model_data["genre"] = [get_genre(sp, each) for each in song_model_data.id]
 
-	print("Ok I'm ready to guess")
+	print("Ok I'm ready to guess if it's old or new")
 	time.sleep(3)
-	print("I think your song is . .. ")
+	print("I think your song is . . . ")
 	time.sleep(3)
 	deploy = song_model_data[["danceability", "energy", "loudness", "mode", "acousticness", "valence", "tempo", "duration_ms"]]
-	myguess = model.predict(deploy)[0]
+	myguess = onmodel.predict(deploy)[0]
 	if myguess == 1:
 		print("OLD!")
 	elif myguess == 0:
 		print("NEW!")
 
-	correct = input("Was I correct? Enter y or n ")
+	correct1 = input("Was I correct? Enter y or n ")
 
-	if correct[0] == "y":
+	print("Ok I'm ready to guess the genre")
+	time.sleep(3)
+	print("I think the genre is . . . ")
+	time.sleep(3)
+	myguess = gmodelconvert[gmodel.predict(deploy)[0]]
+	print(myguess)
+
+	correct2 = input("Was I correct? Enter y or n ")
+
+	if correct1[0] == "y" and correct2[0] == "y":
 		print("Amazing! Thanks for playing!")
 	else:
 		print("Aw shucks! Let me learn from my mistake")
 		print("Adding song to my training data")
-		newtraining = pd.concat([modeltup[0],song_model_data])
-		newtraining.to_csv("./model_data.csv", index = False)
+		newtraining = pd.concat([onmodeltup[0],song_model_data])
+		newtraining.to_csv("./model_data_wgenre.csv", index = False)
 
 	again = input("Wanna try another song? Enter y or n ")
 
@@ -166,19 +173,22 @@ def song_guesser(sp, modeltup):
 		
 
 def run_app():
-	print("Welcome to Jared's Song Analyzer!\nMy name is SongBot and I will guess if a song is old or new.")
-	print("I defined 'old' songs as released before 1980, and 'new' songs as released in the 2000's")
+	print("Welcome to Jared's Song Analyzer!\nMy name is SongBot and I will guess if a song is old or new and its genre.")
+	print("I define 'old' songs as released before 1980, and 'new' songs as released in the 2000's")
 	print("First let me review some songs before I let you guess")
 	input("Press Enter to train SongBot")
-	modeltup = train_old_new_algo()
+	onmodeltup = train_old_new_algo()
+	time.sleep(3)
+	gmodeltup = train_genre_algo()
+
 	sp = make_spotify()
 
 	keep_playing = True
 
 	while keep_playing == True:
-		keep_playing = song_guesser(sp, modeltup)
+		keep_playing = song_guesser(sp, onmodeltup, gmodeltup)
 
-def make_genre_table()
+def make_genre_table():
 	sp = make_spotify()
 	raw_train = pd.read_csv("model_data.csv").drop_duplicates()
 	genre_list = []
