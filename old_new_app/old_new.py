@@ -19,7 +19,10 @@ def train_old_new_algo():
 	if "model_data.csv" not in os.listdir():
 		raise Exception("Could not find training data, shutting down, goodbye :(")
 	print("Training model now beep boop . . .")
-	training = pd.read_csv("model_data.csv").drop_duplicates()
+	raw_train = pd.read_csv("model_data.csv").drop_duplicates()
+	old = raw_train[raw_train.is_old == 1]
+	new = raw_train[raw_train.ryear >= 2000]
+	training = pd.concat([old, new])
 	X = training[["danceability", "energy", "loudness", "mode", "acousticness", "valence", "tempo", "duration_ms"]]
 	Y = training["is_old"]
 
@@ -121,6 +124,7 @@ def song_guesser(sp, modeltup):
 
 def run_app():
 	print("Welcome to Jared's Song Analyzer!\nMy name is SongBot and I will guess if a song is old or new.")
+	print("I defined 'old' songs as released before 1980, and 'new' songs as released in the 2000's")
 	print("First let me review some songs before I let you guess")
 	input("Press Enter to train SongBot")
 	modeltup = train_old_new_algo()
