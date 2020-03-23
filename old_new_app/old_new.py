@@ -160,7 +160,8 @@ def song_guesser(sp, onmodeltup, gmodeltup):
 	else:
 		print("Aw shucks! Let me learn from my mistake")
 		print("Adding song to my training data")
-		newtraining = pd.concat([onmodeltup[0],song_model_data])
+		current_train = pd.read_csv("model_data_wgenre.csv").drop_duplicates()
+		newtraining = pd.concat([current_train,song_model_data])
 		newtraining.to_csv("./model_data_wgenre.csv", index = False)
 
 	again = input("Wanna try another song? Enter y or n ")
