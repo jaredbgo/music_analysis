@@ -146,6 +146,10 @@ def song_guesser(sp, onmodeltup, gmodeltup):
 
 	correct1 = input("Was I correct? Enter y or n ")
 
+	while correct1[0] not in ['y', 'n']:
+		print('Invalid input')
+		correct1 = input("Was I correct? Enter y or n ")
+
 	print("Ok I'm ready to guess the genre")
 	time.sleep(3)
 	print("I think the genre is . . . ")
@@ -154,6 +158,10 @@ def song_guesser(sp, onmodeltup, gmodeltup):
 	print(myguess)
 
 	correct2 = input("Was I correct? Enter y or n ")
+
+	while correct2[0] not in ['y', 'n']:
+		print('Invalid input')
+		correct2 = input("Was I correct? Enter y or n ")
 
 	if correct1[0] == "y" and correct2[0] == "y":
 		print("Amazing! Thanks for playing!")
