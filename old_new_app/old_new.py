@@ -93,6 +93,8 @@ def check_song_name_ret_info(sp):
 			return (False, "blah")
 		print("Is the song you want {s} by {a}?".format(s=songinfo["song_name"].iloc[0], a = songinfo["artist_name"].iloc[0]))
 		good = input("Enter y or n ")
+		while good[0] not in ['y', 'n']:
+			good = input("Invalid input. Enter y or n ")
 		if good[0] == "y":
 			return (True, songinfo)
 		else:
@@ -147,8 +149,7 @@ def song_guesser(sp, onmodeltup, gmodeltup):
 	correct1 = input("Was I correct? Enter y or n ")
 
 	while correct1[0] not in ['y', 'n']:
-		print('Invalid input')
-		correct1 = input("Was I correct? Enter y or n ")
+		correct1 = input("Invalid input. Was I correct? Enter y or n ")
 
 	print("Ok I'm ready to guess the genre")
 	time.sleep(3)
@@ -160,8 +161,7 @@ def song_guesser(sp, onmodeltup, gmodeltup):
 	correct2 = input("Was I correct? Enter y or n ")
 
 	while correct2[0] not in ['y', 'n']:
-		print('Invalid input')
-		correct2 = input("Was I correct? Enter y or n ")
+		correct2 = input("Invalid input. Was I correct? Enter y or n ")
 
 	if correct1[0] == "y" and correct2[0] == "y":
 		print("Amazing! Thanks for playing!")
